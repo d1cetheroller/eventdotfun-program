@@ -5,7 +5,7 @@ use crate::Config;
 #[derive(Accounts)]
 pub struct SetupConfig<'info> {
     #[account(
-        init,
+        init_if_needed,
         space = Config::INIT_SPACE,
         payer = user,
         seeds = [Config::SEED.as_bytes()],
