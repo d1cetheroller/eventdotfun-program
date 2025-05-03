@@ -6,7 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-eventdotfun_program = "H8jsrvMP58WfPdBHNyjbcLLjik1a8VJ4udA2aD6n5uox"
+eventdotfun_program = "8BRSpxYY3FhxvZZZBvFxFG5vwPWtLeeptHor7JBPeDtm"
+
+[programs.devnet]
+eventdotfun_program = "8BRSpxYY3FhxvZZZBvFxFG5vwPWtLeeptHor7JBPeDtm"
 
 [[test.genesis]]
 address = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
@@ -17,6 +20,7 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "localnet"
+# cluster = "devnet"
 wallet = "./keys/turbin3.json"
 
 [scripts]
