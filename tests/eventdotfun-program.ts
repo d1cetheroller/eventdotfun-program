@@ -1,16 +1,191 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { EventdotfunProgram } from "../target/types/eventdotfun_program";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
+
+const deployerKeypair = Keypair.fromSecretKey(
+  new Uint8Array(require("../keys/turbin3.json")),
+);
+
+const feeRecipientKeypair = Keypair.fromSecretKey(
+  new Uint8Array(require("../keys/fee_recipient.json")),
+);
 
 describe("eventdotfun-program", () => {
-  // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.eventdotfunProgram as Program<EventdotfunProgram>;
+  const program = anchor.workspace
+    .eventdotfunProgram as Program<EventdotfunProgram>;
 
-  it("Is initialized!", async () => {
-    // Add your test here.
-    const tx = await program.methods.initialize().rpc();
+  let globalCollection;
+  let globalAsset;
+
+  it("Config State Initialized!", async () => {
+    const fee = new anchor.BN(1000); // 10%
+    const feeRecipient = feeRecipientKeypair.publicKey;
+
+    const tx = await program.methods.initialize(fee, feeRecipient).rpc();
     console.log("Your transaction signature", tx);
+  });
+
+  it("Config State Updated!", async () => {
+    const fee = new anchor.BN(1000); // 10%
+    const feeRecipient = feeRecipientKeypair.publicKey;
+
+    const tx = await program.methods.updateConfig(fee, feeRecipient).rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  it("Bonding Curve Created!", async () => {
+    const salesType = 1;
+    const startAt = new anchor.BN(1);
+    const endAt = new anchor.BN(1);
+    const exponent = 2;
+    const initialPrice = new anchor.BN(0.001 * LAMPORTS_PER_SOL);
+    const lastPrice = new anchor.BN(1 * LAMPORTS_PER_SOL);
+    const maxTicketToSold = new anchor.BN(100);
+
+    const collection = Keypair.generate();
+
+    globalCollection = collection.publicKey;
+
+    const [bondingCurve] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding_curve"), collection.publicKey.toBuffer()],
+      program.programId,
+    );
+
+    const [vault] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), bondingCurve.toBuffer()],
+      program.programId,
+    );
+
+    const tx = await program.methods
+      .createBondingCurve(
+        salesType,
+        startAt,
+        endAt,
+        exponent,
+        initialPrice,
+        lastPrice,
+        maxTicketToSold,
+      )
+      .accounts({
+        // @ts-ignore
+        bondingCurve,
+        vault,
+        // asset: asset.publicKey,
+        collection: collection.publicKey,
+        user: deployerKeypair.publicKey,
+        systemProgram: SYSTEM_PROGRAM_ID,
+        mplCoreProgram: new PublicKey(
+          "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+        ),
+      })
+      .signers([collection])
+      .rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  it("Buy!", async () => {
+    const asset = Keypair.generate();
+
+    globalAsset = asset.publicKey;
+
+    const [bondingCurve] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+      program.programId,
+    );
+
+    const [vault] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), bondingCurve.toBuffer()],
+      program.programId,
+    );
+
+    const numOfTicket = 1;
+
+    const tx = await program.methods
+      .buy(numOfTicket)
+      .accounts({
+        // @ts-ignore
+        bondingCurve,
+        vault,
+        collection: globalCollection,
+        asset: asset.publicKey,
+        user: deployerKeypair.publicKey,
+        systemProgram: SYSTEM_PROGRAM_ID,
+        mplCoreProgram: new PublicKey(
+          "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+        ),
+      })
+      .signers([asset])
+      .rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  it("Sell!", async () => {
+    const [bondingCurve] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+      program.programId,
+    );
+
+    const [vault] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), bondingCurve.toBuffer()],
+      program.programId,
+    );
+
+    const numOfTicket = 1;
+
+    const tx = await program.methods
+      .sell(numOfTicket)
+      .accounts({
+        // @ts-ignore
+        bondingCurve,
+        vault,
+        collection: globalCollection,
+        asset: globalAsset,
+        user: deployerKeypair.publicKey,
+        systemProgram: SYSTEM_PROGRAM_ID,
+        mplCoreProgram: new PublicKey(
+          "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+        ),
+      })
+      .rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  it("withdraw!", async () => {
+    const [bondingCurve] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+      program.programId,
+    );
+
+    const [vault] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), bondingCurve.toBuffer()],
+      program.programId,
+    );
+
+    const tx = await program.methods
+      .withdraw()
+      .accounts({
+        // @ts-ignore
+        bondingCurve,
+        vault,
+        collection: globalCollection,
+        user: deployerKeypair.publicKey,
+        systemProgram: SYSTEM_PROGRAM_ID,
+      })
+      .rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  it("read account data", async () => {
+    const [bondingCurve] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+      program.programId,
+    );
+
+    const accInfo = await program.account.bondingCurve.fetch(bondingCurve);
+    console.log(accInfo);
   });
 });
