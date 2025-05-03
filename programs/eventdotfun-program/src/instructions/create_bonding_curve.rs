@@ -1,4 +1,8 @@
 use anchor_lang::prelude::*;
+use mpl_core::{
+    instructions::{CreateCollectionV2CpiBuilder, CreateV2CpiBuilder},
+    ID as MPL_CORE_ID,
+};
 
 use crate::BondingCurve;
 
@@ -13,23 +17,18 @@ pub struct CreateBondingCurve<'info> {
     )]
     pub bonding_curve: Account<'info, BondingCurve>,
 
-    /// CHECK:
-    #[account(mut)]
-    pub collection: UncheckedAccount<'info>,
-    // #[account(mut)]
-    // pub collection: Option<Account<'info, BaseCollectionV1>>,
-    #[account(mut, seeds = [bonding_curve.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"vault", bonding_curve.key().as_ref()], bump)]
     pub vault: SystemAccount<'info>,
 
     #[account(mut)]
-    pub asset: Signer<'info>,
+    pub collection: Signer<'info>,
 
     #[account(mut)]
     pub user: Signer<'info>,
 
     pub system_program: Program<'info, System>,
 
-    // #[account(address = MPL_CORE_ID)]
+    #[account(address = MPL_CORE_ID)]
     /// CHECK: this account is checked by the address constraint
     pub mpl_core_program: UncheckedAccount<'info>,
 }
@@ -41,19 +40,19 @@ impl<'info> CreateBondingCurve<'info> {
         start_at: u64,
         end_at: u64,
         exponent: u8,
-        initial_price: f64,
-        last_price: f64,
+        initial_price: u64,
+        last_price: u64,
         max_ticket_to_sold: u64,
         bumps: &CreateBondingCurveBumps,
     ) -> Result<()> {
-        let multiplier =
-            (last_price - initial_price) / (max_ticket_to_sold ^ exponent as u64) as f64;
+        let multiplier = (last_price - initial_price) / (max_ticket_to_sold ^ exponent as u64);
 
         self.bonding_curve.set_inner(BondingCurve {
             creator: self.user.key(),
             sales_type,
             start_at,
             end_at,
+            collection: self.collection.key(),
             exponent,
             initial_price,
             last_price,
@@ -65,6 +64,17 @@ impl<'info> CreateBondingCurve<'info> {
             bump: bumps.bonding_curve,
             vault_bump: bumps.vault,
         });
+
+        let collection_key = self.collection.key();
+
+        CreateCollectionV2CpiBuilder::new(&self.mpl_core_program.to_account_info())
+            .collection(&self.collection.to_account_info())
+            .payer(&self.user.to_account_info())
+            .update_authority(Some(self.bonding_curve.as_ref()))
+            .system_program(&self.system_program.to_account_info())
+            .name("EVENTDOTFUN Collection #1".to_owned())
+            .uri("https://devnet.irys.xyz/2x17GpZTmXPKGGiUKuaQA5b9jg3tQuG7VquatBLdkFB2".to_owned())
+            .invoke()?;
 
         Ok(())
     }
