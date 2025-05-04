@@ -7,11 +7,14 @@ use anchor_spl::{
     token_interface::{TokenAccount, TokenInterface},
 };
 use mpl_core::{
+    accounts::BaseAssetV1,
+    fetch_plugin,
     instructions::{BurnV1CpiBuilder, CreateV2CpiBuilder},
+    types::{Attributes, PluginType},
     ID as MPL_CORE_ID,
 };
 
-use crate::BondingCurve;
+use crate::{error::ErrorCode, BondingCurve};
 
 #[derive(Accounts)]
 pub struct Sell<'info> {
@@ -33,37 +36,41 @@ pub struct Sell<'info> {
     #[account(mut)]
     pub asset: UncheckedAccount<'info>,
 
-    // #[account(mut)]
-    // pub user_associated_token_account: InterfaceAccount<'info, TokenAccount>,
     #[account(mut)]
     pub user: Signer<'info>,
 
     pub system_program: Program<'info, System>,
 
-    // pub associated_token_program: Program<'info, AssociatedToken>,
-
-    // pub token_program: Interface<'info, TokenInterface>,
     #[account(address = MPL_CORE_ID)]
     /// CHECK: this account is checked by the address constraint
     pub mpl_core_program: UncheckedAccount<'info>,
 }
 
 impl<'info> Sell<'info> {
-    pub fn sell(&mut self, num_of_tickets: u8) -> Result<()> {
-        let mut total_lamports = 0;
+    pub fn sell(&mut self) -> Result<()> {
+        let ticket_index = self.bonding_curve.current_ticket_sold;
+        let initial_price = self.bonding_curve.initial_price;
+        let exponent = self.bonding_curve.exponent;
+        let multiplier = self.bonding_curve.multiplier;
+        let min_ticket_to_sold = self.bonding_curve.min_ticket_to_sold;
 
-        for _i in 0..num_of_tickets {
-            let ticket_index = self.bonding_curve.current_ticket_sold;
-            let initial_price = self.bonding_curve.initial_price;
-            let exponent = self.bonding_curve.exponent;
-            let multiplier = self.bonding_curve.multiplier;
+        let now = Clock::get()?.unix_timestamp as u64;
+        let end_at = self.bonding_curve.end_at;
 
-            total_lamports = initial_price + ((ticket_index - 1) ^ exponent as u64) * multiplier;
-        }
+        require!(now <= end_at, ErrorCode::CurveEnded);
+        require!(
+            ticket_index < min_ticket_to_sold,
+            ErrorCode::CurveReachesThreshold
+        );
 
-        self.bonding_curve.current_ticket_sold -= num_of_tickets as u64;
-        self.bonding_curve.total_sol += total_lamports;
+        // 1. calculate lamports
+        let lamports = initial_price + ((ticket_index - 1) ^ exponent as u64) * multiplier;
 
+        // 2. update bonding curve state
+        self.bonding_curve.current_ticket_sold -= 1_u64;
+        self.bonding_curve.total_sol -= lamports;
+
+        // 3. transfer from vault
         let cpi_program = self.system_program.to_account_info();
         let cpi_account = Transfer {
             from: self.vault.to_account_info(),
@@ -79,26 +86,24 @@ impl<'info> Sell<'info> {
         let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(cpi_program.clone(), cpi_account, signer_seeds);
-        transfer(cpi_ctx, total_lamports)?;
+        transfer(cpi_ctx, lamports)?;
 
-        let collection_key = self.collection.key();
-        let seeds = &[
-            BondingCurve::SEED.as_bytes(),
-            collection_key.as_ref(),
-            &[self.bonding_curve.bump],
-        ];
-        let signer_seeds = &[&seeds[..]];
+        // 4. burn Core asset
+        // let collection_key = self.collection.key();
+        // let seeds = &[
+        //     BondingCurve::SEED.as_bytes(),
+        //     collection_key.as_ref(),
+        //     &[self.bonding_curve.bump],
+        // ];
+        // let signer_seeds = &[&seeds[..]];
 
-        for _ in 0..num_of_tickets {
-            BurnV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
-                .asset(&self.asset.to_account_info())
-                .collection(Some(self.collection.as_ref()))
-                .authority(Some(&self.user.to_account_info()))
-                .payer(&self.user.to_account_info())
-                .system_program(Some(&self.system_program.to_account_info()))
-                .invoke()?;
-            // .invoke_signed(signer_seeds)?;
-        }
+        BurnV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
+            .asset(&self.asset.to_account_info())
+            .collection(Some(self.collection.as_ref()))
+            .authority(Some(&self.user.to_account_info()))
+            .payer(&self.user.to_account_info())
+            .system_program(Some(&self.system_program.to_account_info()))
+            .invoke()?;
 
         Ok(())
     }

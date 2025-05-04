@@ -1,5 +1,4 @@
 #![allow(unexpected_cfgs)]
-
 pub mod constants;
 pub mod error;
 pub mod instructions;
@@ -34,7 +33,9 @@ pub mod eventdotfun_program {
         exponent: u8,
         initial_price: u64,
         last_price: u64,
+        min_ticket_to_sold: u64,
         max_ticket_to_sold: u64,
+        refund_window: u64,
     ) -> Result<()> {
         ctx.accounts.create_bonding_curve(
             sales_type,
@@ -43,20 +44,26 @@ pub mod eventdotfun_program {
             exponent,
             initial_price,
             last_price,
+            min_ticket_to_sold,
             max_ticket_to_sold,
+            refund_window,
             &ctx.bumps,
         )
     }
 
-    pub fn buy(ctx: Context<Buy>, num_of_ticket: u8) -> Result<()> {
-        ctx.accounts.buy(num_of_ticket)
+    pub fn buy(ctx: Context<Buy>) -> Result<()> {
+        ctx.accounts.buy()
     }
 
-    pub fn sell(ctx: Context<Sell>, num_of_ticket: u8) -> Result<()> {
-        ctx.accounts.sell(num_of_ticket)
+    pub fn sell(ctx: Context<Sell>) -> Result<()> {
+        ctx.accounts.sell()
     }
 
     pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
         ctx.accounts.withdraw()
+    }
+
+    pub fn refund(ctx: Context<Refund>) -> Result<()> {
+        ctx.accounts.refund()
     }
 }

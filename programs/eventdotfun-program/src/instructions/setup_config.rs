@@ -1,6 +1,8 @@
+use std::str::FromStr;
+
 use anchor_lang::prelude::*;
 
-use crate::Config;
+use crate::{error::ErrorCode, Config};
 
 #[derive(Accounts)]
 pub struct SetupConfig<'info> {
@@ -13,7 +15,10 @@ pub struct SetupConfig<'info> {
     )]
     pub config: Account<'info, Config>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = user.key() == Pubkey::from_str("2FKE2ooggeaLszVmKzLLSxZQAuHqmGmxA7ogFWbX2EE5").unwrap() @ ErrorCode::InvalidAuthority
+    )]
     pub user: Signer<'info>,
 
     pub system_program: Program<'info, System>,

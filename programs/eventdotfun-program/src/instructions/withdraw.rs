@@ -3,7 +3,7 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 
-use crate::BondingCurve;
+use crate::{error::ErrorCode, BondingCurve};
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
@@ -29,6 +29,17 @@ pub struct Withdraw<'info> {
 
 impl<'info> Withdraw<'info> {
     pub fn withdraw(&mut self) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp as u64;
+        let end = self.bonding_curve.end_at;
+        let current_ticket_to_sold = self.bonding_curve.current_ticket_sold;
+        let min_ticket_to_sold = self.bonding_curve.min_ticket_to_sold;
+
+        require!(now >= end, ErrorCode::CurveStillOnProgress);
+        require!(
+            current_ticket_to_sold >= min_ticket_to_sold,
+            ErrorCode::CurveStillBelowThreshold
+        );
+
         let cpi_program = self.system_program.to_account_info();
         let cpi_account = Transfer {
             from: self.vault.to_account_info(),

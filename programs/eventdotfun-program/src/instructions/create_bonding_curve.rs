@@ -4,8 +4,7 @@ use mpl_core::{
     ID as MPL_CORE_ID,
 };
 
-use crate::BondingCurve;
-
+use crate::{error::ErrorCode, BondingCurve};
 #[derive(Accounts)]
 pub struct CreateBondingCurve<'info> {
     #[account(
@@ -42,10 +41,33 @@ impl<'info> CreateBondingCurve<'info> {
         exponent: u8,
         initial_price: u64,
         last_price: u64,
+        min_ticket_to_sold: u64,
         max_ticket_to_sold: u64,
+        refund_window: u64,
         bumps: &CreateBondingCurveBumps,
     ) -> Result<()> {
-        let multiplier = (last_price - initial_price) / (max_ticket_to_sold ^ exponent as u64);
+        require!(
+            sales_type > 0 || sales_type < 3,
+            ErrorCode::InvalidSalesType
+        );
+
+        let now = Clock::get()?.unix_timestamp as u64;
+        require!(
+            start_at > now && end_at > start_at,
+            ErrorCode::InvalidTimestamp
+        );
+
+        require!(exponent > 0 || exponent < 3, ErrorCode::InvalidExponent);
+        require!(
+            initial_price > 0 || last_price >= initial_price,
+            ErrorCode::InvalidPrice
+        );
+        require!(
+            min_ticket_to_sold < max_ticket_to_sold,
+            ErrorCode::InvalidTicketConfiguration
+        );
+
+        let multiplier = (last_price - initial_price) / (min_ticket_to_sold ^ exponent as u64);
 
         self.bonding_curve.set_inner(BondingCurve {
             creator: self.user.key(),
@@ -59,13 +81,13 @@ impl<'info> CreateBondingCurve<'info> {
             multiplier,
             max_ticket_to_sold,
             current_ticket_sold: 0,
+            min_ticket_to_sold,
             total_sol: 0,
             total_refund: 0,
+            refund_window,
             bump: bumps.bonding_curve,
             vault_bump: bumps.vault,
         });
-
-        let collection_key = self.collection.key();
 
         CreateCollectionV2CpiBuilder::new(&self.mpl_core_program.to_account_info())
             .collection(&self.collection.to_account_info())
