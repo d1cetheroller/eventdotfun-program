@@ -3,6 +3,7 @@ import { Program } from "@coral-xyz/anchor";
 import { EventdotfunProgram } from "../target/types/eventdotfun_program";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
+import { BN } from "bn.js";
 
 const deployerKeypair = Keypair.fromSecretKey(
   new Uint8Array(require("../keys/turbin3.json")),
@@ -38,13 +39,17 @@ describe("eventdotfun-program", () => {
   });
 
   it("Bonding Curve Created!", async () => {
+    const now = Math.floor(Date.now() / 1000);
+
     const salesType = 1;
-    const startAt = new anchor.BN(1);
-    const endAt = new anchor.BN(1);
+    const startAt = new anchor.BN(now + 5);
+    const endAt = new anchor.BN(now + 20);
     const exponent = 2;
     const initialPrice = new anchor.BN(0.001 * LAMPORTS_PER_SOL);
     const lastPrice = new anchor.BN(1 * LAMPORTS_PER_SOL);
+    const minTicketToSold = new BN(80);
     const maxTicketToSold = new anchor.BN(100);
+    const refundWindow = new BN(1746320400);
 
     const collection = Keypair.generate();
 
@@ -68,7 +73,9 @@ describe("eventdotfun-program", () => {
         exponent,
         initialPrice,
         lastPrice,
+        minTicketToSold,
         maxTicketToSold,
+        refundWindow,
       )
       .accounts({
         // @ts-ignore
@@ -85,6 +92,8 @@ describe("eventdotfun-program", () => {
       .signers([collection])
       .rpc();
     console.log("Your transaction signature", tx);
+
+    await sleep(10000);
   });
 
   it("Buy!", async () => {
@@ -102,10 +111,10 @@ describe("eventdotfun-program", () => {
       program.programId,
     );
 
-    const numOfTicket = 1;
+    // const numOfTicket = 1;
 
     const tx = await program.methods
-      .buy(numOfTicket)
+      .buy()
       .accounts({
         // @ts-ignore
         bondingCurve,
@@ -119,7 +128,9 @@ describe("eventdotfun-program", () => {
         ),
       })
       .signers([asset])
-      .rpc();
+      .rpc({
+        commitment: "confirmed",
+      });
     console.log("Your transaction signature", tx);
   });
 
@@ -134,10 +145,10 @@ describe("eventdotfun-program", () => {
       program.programId,
     );
 
-    const numOfTicket = 1;
+    // const numOfTicket = 1;
 
     const tx = await program.methods
-      .sell(numOfTicket)
+      .sell()
       .accounts({
         // @ts-ignore
         bondingCurve,
@@ -150,11 +161,23 @@ describe("eventdotfun-program", () => {
           "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
         ),
       })
-      .rpc();
+      .rpc({
+        commitment: "confirmed",
+      });
     console.log("Your transaction signature", tx);
+
+    // const txDetails = await program.provider.connection.getParsedTransaction(
+    //   tx,
+    //   {
+    //     commitment: "confirmed",
+    //   },
+    // );
+    // console.log(txDetails);
   });
 
   it("withdraw!", async () => {
+    // await sleep(10000);
+
     const [bondingCurve] = PublicKey.findProgramAddressSync(
       [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
       program.programId,
@@ -189,3 +212,5 @@ describe("eventdotfun-program", () => {
     console.log(accInfo);
   });
 });
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
