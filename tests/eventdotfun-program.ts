@@ -175,32 +175,32 @@ describe("eventdotfun-program", () => {
     // console.log(txDetails);
   });
 
-  it("withdraw!", async () => {
-    // await sleep(10000);
+  // it("withdraw!", async () => {
+  //   // await sleep(10000);
 
-    const [bondingCurve] = PublicKey.findProgramAddressSync(
-      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
-      program.programId,
-    );
+  //   const [bondingCurve] = PublicKey.findProgramAddressSync(
+  //     [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+  //     program.programId,
+  //   );
 
-    const [vault] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), bondingCurve.toBuffer()],
-      program.programId,
-    );
+  //   const [vault] = PublicKey.findProgramAddressSync(
+  //     [Buffer.from("vault"), bondingCurve.toBuffer()],
+  //     program.programId,
+  //   );
 
-    const tx = await program.methods
-      .withdraw()
-      .accounts({
-        // @ts-ignore
-        bondingCurve,
-        vault,
-        collection: globalCollection,
-        user: deployerKeypair.publicKey,
-        systemProgram: SYSTEM_PROGRAM_ID,
-      })
-      .rpc();
-    console.log("Your transaction signature", tx);
-  });
+  //   const tx = await program.methods
+  //     .withdraw()
+  //     .accounts({
+  //       // @ts-ignore
+  //       bondingCurve,
+  //       vault,
+  //       collection: globalCollection,
+  //       user: deployerKeypair.publicKey,
+  //       systemProgram: SYSTEM_PROGRAM_ID,
+  //     })
+  //     .rpc();
+  //   console.log("Your transaction signature", tx);
+  // });
 
   it("read account data", async () => {
     const [bondingCurve] = PublicKey.findProgramAddressSync(
