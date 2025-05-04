@@ -3,7 +3,7 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 use mpl_core::{
-    accounts::BaseAssetV1,
+    accounts::{BaseAssetV1, BaseCollectionV1},
     fetch_external_plugin_adapter, fetch_external_plugin_adapter_data_info,
     instructions::{
         BurnV1CpiBuilder, CreateV2CpiBuilder, WriteExternalPluginAdapterDataV1CpiBuilder,
@@ -30,9 +30,8 @@ pub struct Buy<'info> {
     #[account(mut, seeds = [b"vault", bonding_curve.key().as_ref()], bump = bonding_curve.vault_bump)]
     pub vault: SystemAccount<'info>,
 
-    /// CHECK:
     #[account(mut, constraint = collection.key() == bonding_curve.collection)]
-    pub collection: UncheckedAccount<'info>,
+    pub collection: Account<'info, BaseCollectionV1>,
 
     #[account(mut)]
     pub asset: Signer<'info>,

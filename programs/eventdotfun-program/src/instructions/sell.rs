@@ -7,7 +7,7 @@ use anchor_spl::{
     token_interface::{TokenAccount, TokenInterface},
 };
 use mpl_core::{
-    accounts::BaseAssetV1,
+    accounts::{BaseAssetV1, BaseCollectionV1},
     fetch_plugin,
     instructions::{BurnV1CpiBuilder, CreateV2CpiBuilder},
     types::{Attributes, PluginType},
@@ -28,13 +28,11 @@ pub struct Sell<'info> {
     #[account(mut, seeds = [b"vault", bonding_curve.key().as_ref()], bump = bonding_curve.vault_bump)]
     pub vault: SystemAccount<'info>,
 
-    /// CHECK:
     #[account(mut, constraint = collection.key() == bonding_curve.collection)]
-    pub collection: UncheckedAccount<'info>,
+    pub collection: Account<'info, BaseCollectionV1>,
 
-    /// CHECK:
     #[account(mut)]
-    pub asset: UncheckedAccount<'info>,
+    pub asset: Account<'info, BaseAssetV1>,
 
     #[account(mut)]
     pub user: Signer<'info>,
