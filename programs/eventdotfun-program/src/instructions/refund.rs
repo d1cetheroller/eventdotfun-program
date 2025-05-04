@@ -3,7 +3,7 @@ use anchor_lang::{
     system_program::{transfer, Transfer},
 };
 use mpl_core::{
-    accounts::BaseAssetV1,
+    accounts::{BaseAssetV1, BaseCollectionV1},
     fetch_plugin,
     instructions::{BurnV1CpiBuilder, CreateV2CpiBuilder},
     types::{Attributes, PluginType},
@@ -26,11 +26,10 @@ pub struct Refund<'info> {
 
     /// CHECK:
     #[account(mut, constraint = collection.key() == bonding_curve.collection)]
-    pub collection: UncheckedAccount<'info>,
+    pub collection: Account<'info, BaseCollectionV1>,
 
-    /// CHECK:
     #[account(mut)]
-    pub asset: UncheckedAccount<'info>,
+    pub asset: Account<'info, BaseAssetV1>,
 
     #[account(mut)]
     pub user: Signer<'info>,
@@ -56,6 +55,14 @@ impl<'info> Refund<'info> {
                 current_ticket_to_sold < min_ticket_to_sold,
                 ErrorCode::CurveReachesThreshold
             );
+
+            BurnV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
+                .asset(&self.asset.to_account_info())
+                .collection(Some(self.collection.as_ref()))
+                .authority(Some(&self.user.to_account_info()))
+                .payer(&self.user.to_account_info())
+                .system_program(Some(&self.system_program.to_account_info()))
+                .invoke()?;
         } else if sales_type == 2 {
             let refund_at = end + self.bonding_curve.refund_window;
             require!(now >= refund_at, ErrorCode::RefundNotOpened);
