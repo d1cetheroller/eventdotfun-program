@@ -81,7 +81,6 @@ describe("eventdotfun-program", () => {
         // @ts-ignore
         bondingCurve,
         vault,
-        // asset: asset.publicKey,
         collection: collection.publicKey,
         user: deployerKeypair.publicKey,
         systemProgram: SYSTEM_PROGRAM_ID,
@@ -110,8 +109,6 @@ describe("eventdotfun-program", () => {
       [Buffer.from("vault"), bondingCurve.toBuffer()],
       program.programId,
     );
-
-    // const numOfTicket = 1;
 
     const tx = await program.methods
       .buy()
@@ -145,8 +142,6 @@ describe("eventdotfun-program", () => {
       program.programId,
     );
 
-    // const numOfTicket = 1;
-
     const tx = await program.methods
       .sell()
       .accounts({
@@ -165,18 +160,10 @@ describe("eventdotfun-program", () => {
         commitment: "confirmed",
       });
     console.log("Your transaction signature", tx);
-
-    // const txDetails = await program.provider.connection.getParsedTransaction(
-    //   tx,
-    //   {
-    //     commitment: "confirmed",
-    //   },
-    // );
-    // console.log(txDetails);
   });
 
   // it("withdraw!", async () => {
-  //   // await sleep(10000);
+  //   await sleep(10000);
 
   //   const [bondingCurve] = PublicKey.findProgramAddressSync(
   //     [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
@@ -202,15 +189,15 @@ describe("eventdotfun-program", () => {
   //   console.log("Your transaction signature", tx);
   // });
 
-  it("read account data", async () => {
-    const [bondingCurve] = PublicKey.findProgramAddressSync(
-      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
-      program.programId,
-    );
+  // it("read account data", async () => {
+  //   const [bondingCurve] = PublicKey.findProgramAddressSync(
+  //     [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+  //     program.programId,
+  //   );
 
-    const accInfo = await program.account.bondingCurve.fetch(bondingCurve);
-    console.log(accInfo);
-  });
+  //   const accInfo = await program.account.bondingCurve.fetch(bondingCurve);
+  //   console.log(accInfo);
+  // });
 });
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
