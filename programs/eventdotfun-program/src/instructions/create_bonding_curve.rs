@@ -94,7 +94,7 @@ impl<'info> CreateBondingCurve<'info> {
             .payer(&self.user.to_account_info())
             .update_authority(Some(self.bonding_curve.as_ref()))
             .system_program(&self.system_program.to_account_info())
-            .name("EVENTDOTFUN Collection #1".to_owned())
+            .name("EVENTDOTFUN Collection".to_owned())
             .uri("https://devnet.irys.xyz/2x17GpZTmXPKGGiUKuaQA5b9jg3tQuG7VquatBLdkFB2".to_owned())
             .invoke()?;
 
