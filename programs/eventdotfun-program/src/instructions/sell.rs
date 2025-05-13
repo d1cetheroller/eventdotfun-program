@@ -87,14 +87,6 @@ impl<'info> Sell<'info> {
         transfer(cpi_ctx, lamports)?;
 
         // 4. burn Core asset
-        // let collection_key = self.collection.key();
-        // let seeds = &[
-        //     BondingCurve::SEED.as_bytes(),
-        //     collection_key.as_ref(),
-        //     &[self.bonding_curve.bump],
-        // ];
-        // let signer_seeds = &[&seeds[..]];
-
         BurnV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
             .asset(&self.asset.to_account_info())
             .collection(Some(self.collection.as_ref()))
