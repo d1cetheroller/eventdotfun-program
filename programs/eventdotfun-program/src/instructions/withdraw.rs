@@ -21,7 +21,7 @@ pub struct Withdraw<'info> {
     #[account(mut, constraint = collection.key() == bonding_curve.collection)]
     pub collection: UncheckedAccount<'info>,
 
-    #[account(mut)]
+    #[account(mut, constraint = user.key() == bonding_curve.creator)]
     pub user: Signer<'info>,
 
     pub system_program: Program<'info, System>,
