@@ -42,12 +42,13 @@ describe("eventdotfun-program", () => {
     const now = Math.floor(Date.now() / 1000);
 
     const salesType = 1;
-    const startAt = new anchor.BN(now + 5);
-    const endAt = new anchor.BN(now + 20);
+    const startAt = new anchor.BN(now + 1);
+    const endAt = new anchor.BN(now + 10);
     const exponent = 2;
     const initialPrice = new anchor.BN(0.001 * LAMPORTS_PER_SOL);
     const lastPrice = new anchor.BN(1 * LAMPORTS_PER_SOL);
-    const minTicketToSold = new BN(80);
+    // const minTicketToSold = new BN(80);
+    const minTicketToSold = new BN(3);
     const maxTicketToSold = new anchor.BN(100);
     const refundWindow = new BN(1746320400);
 
@@ -92,10 +93,10 @@ describe("eventdotfun-program", () => {
       .rpc();
     console.log("Your transaction signature", tx);
 
-    await sleep(10000);
+    await sleep(5000);
   });
 
-  it("Buy!", async () => {
+  it("1st Buy!", async () => {
     const asset = Keypair.generate();
 
     globalAsset = asset.publicKey;
@@ -162,42 +163,150 @@ describe("eventdotfun-program", () => {
     console.log("Your transaction signature", tx);
   });
 
-  // it("withdraw!", async () => {
-  //   await sleep(10000);
+  it("2nd Buy!", async () => {
+    const asset = Keypair.generate();
 
-  //   const [bondingCurve] = PublicKey.findProgramAddressSync(
-  //     [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
-  //     program.programId,
-  //   );
+    globalAsset = asset.publicKey;
 
-  //   const [vault] = PublicKey.findProgramAddressSync(
-  //     [Buffer.from("vault"), bondingCurve.toBuffer()],
-  //     program.programId,
-  //   );
+    const [bondingCurve] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+      program.programId,
+    );
 
-  //   const tx = await program.methods
-  //     .withdraw()
-  //     .accounts({
-  //       // @ts-ignore
-  //       bondingCurve,
-  //       vault,
-  //       collection: globalCollection,
-  //       user: deployerKeypair.publicKey,
-  //       systemProgram: SYSTEM_PROGRAM_ID,
-  //     })
-  //     .rpc();
-  //   console.log("Your transaction signature", tx);
-  // });
+    const [vault] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), bondingCurve.toBuffer()],
+      program.programId,
+    );
 
-  // it("read account data", async () => {
-  //   const [bondingCurve] = PublicKey.findProgramAddressSync(
-  //     [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
-  //     program.programId,
-  //   );
+    const tx = await program.methods
+      .buy()
+      .accounts({
+        // @ts-ignore
+        bondingCurve,
+        vault,
+        collection: globalCollection,
+        asset: asset.publicKey,
+        user: deployerKeypair.publicKey,
+        systemProgram: SYSTEM_PROGRAM_ID,
+        mplCoreProgram: new PublicKey(
+          "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+        ),
+      })
+      .signers([asset])
+      .rpc({
+        commitment: "confirmed",
+      });
+    console.log("Your transaction signature", tx);
+  });
 
-  //   const accInfo = await program.account.bondingCurve.fetch(bondingCurve);
-  //   console.log(accInfo);
-  // });
+  it("3rd Buy!", async () => {
+    const asset = Keypair.generate();
+
+    globalAsset = asset.publicKey;
+
+    const [bondingCurve] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+      program.programId,
+    );
+
+    const [vault] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), bondingCurve.toBuffer()],
+      program.programId,
+    );
+
+    const tx = await program.methods
+      .buy()
+      .accounts({
+        // @ts-ignore
+        bondingCurve,
+        vault,
+        collection: globalCollection,
+        asset: asset.publicKey,
+        user: deployerKeypair.publicKey,
+        systemProgram: SYSTEM_PROGRAM_ID,
+        mplCoreProgram: new PublicKey(
+          "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+        ),
+      })
+      .signers([asset])
+      .rpc({
+        commitment: "confirmed",
+      });
+    console.log("Your transaction signature", tx);
+  });
+
+  it("4th Buy!", async () => {
+    const asset = Keypair.generate();
+
+    globalAsset = asset.publicKey;
+
+    const [bondingCurve] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+      program.programId,
+    );
+
+    const [vault] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), bondingCurve.toBuffer()],
+      program.programId,
+    );
+
+    const tx = await program.methods
+      .buy()
+      .accounts({
+        // @ts-ignore
+        bondingCurve,
+        vault,
+        collection: globalCollection,
+        asset: asset.publicKey,
+        user: deployerKeypair.publicKey,
+        systemProgram: SYSTEM_PROGRAM_ID,
+        mplCoreProgram: new PublicKey(
+          "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+        ),
+      })
+      .signers([asset])
+      .rpc({
+        commitment: "confirmed",
+      });
+    console.log("Your transaction signature", tx);
+  });
+
+  it("withdraw!", async () => {
+    await sleep(10000);
+
+    const [bondingCurve] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+      program.programId,
+    );
+
+    const [vault] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), bondingCurve.toBuffer()],
+      program.programId,
+    );
+
+    const tx = await program.methods
+      .withdraw()
+      .accounts({
+        // @ts-ignore
+        bondingCurve,
+        vault,
+        collection: globalCollection,
+        user: deployerKeypair.publicKey,
+        systemProgram: SYSTEM_PROGRAM_ID,
+      })
+      .rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  it("read account data", async () => {
+    const [bondingCurve] = PublicKey.findProgramAddressSync(
+      [Buffer.from("bonding_curve"), globalCollection.toBuffer()],
+      program.programId,
+    );
+
+    const accInfo = await program.account.bondingCurve.fetch(bondingCurve);
+    console.log(accInfo);
+  });
 });
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
